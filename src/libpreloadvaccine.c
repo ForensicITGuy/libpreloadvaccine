@@ -82,6 +82,18 @@ char *la_objsearch(const char *name, uintptr_t *cookie, unsigned int flag)
 
 bool is_preload(const char *object)
 {
-    UNUSED(object);
+    bool in_ld_preload = ld_preload_contains_object(object);
+    bool in_ld_so_preload = ld_so_preload_contains_object(object);
+
+    return (in_ld_preload || in_ld_so_preload);
+}
+
+bool ld_preload_contains_object (const char *object)
+{
+    return false;
+}
+
+bool ld_so_preload_contains_object(const char *object)
+{
     return false;
 }
