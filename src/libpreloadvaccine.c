@@ -1,5 +1,12 @@
 #include "libpreloadvaccine.h"
+#include <fcntl.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 /*
     From the rtld-audit manpage:
@@ -70,30 +77,94 @@ char *la_objsearch(const char *name, uintptr_t *cookie, unsigned int flag)
     UNUSED(flag);
     printf("%s\n",name);
 
-    if (is_preload(name))
+    if(is_preload(name) && !allowed_preload(name))
     {
+        printf("Found preload not allowed");
         return NULL;
     }
     else
     {
+        printf("Found object allowed");
         return (char *)name;
     }
 }
 
 bool is_preload(const char *object)
 {
-    bool in_ld_preload = ld_preload_contains_object(object);
-    bool in_ld_so_preload = ld_so_preload_contains_object(object);
+    printf("Testing preloads");
+    bool in_ld_preload = env_variable_contains_object(object, "LD_PRELOAD");
+    bool in_ld_so_preload = file_contains_object(object, "/etc/ld.so.preload");
 
     return (in_ld_preload || in_ld_so_preload);
 }
 
-bool ld_preload_contains_object (const char *object)
+bool allowed_preload(const char *object)
 {
-    return false;
+    printf("Testing allow file");
+    return file_contains_object(object, "/etc/libpreloadvaccine.allow");
 }
 
-bool ld_so_preload_contains_object(const char *object)
+bool env_variable_contains_object (const char *object, const char *env_variable)
 {
-    return false;
+    printf("Testing env var");
+    bool contains_object;
+    const char *ld_preload = getenv(env_variable);
+
+    if (ld_preload != NULL)
+    {
+        if (strstr(ld_preload,object) != NULL)
+        {
+            contains_object = true;
+        }
+        else
+        {
+            contains_object = false;
+        }
+    }
+
+    return contains_object;
+}
+
+bool file_contains_object(const char *object, const char *specified_file)
+{
+    printf("Testing file");
+    bool contains_object = false;
+
+    int fd;
+    struct stat file_info;
+    size_t size;
+
+    char *mapped_file;
+
+    if ((fd = open(specified_file, O_RDONLY)) >= 0)
+    {    
+        fstat(fd, &file_info);
+        size = file_info.st_size;
+
+        mapped_file = mmap(NULL, size, PROT_READ, MAP_PRIVATE, fd, 0);
+
+        if (strstr(mapped_file,object) != NULL)
+        {
+            contains_object = true;
+        }
+        else
+        {
+            contains_object = false;
+        }
+        
+        munmap(mapped_file, size);
+
+        if(fd)
+        {
+            close(fd);
+        }
+    }
+    else
+    {
+        contains_object = false;
+    }
+    
+
+    // Return boolean
+    return contains_object;
 }

@@ -11,7 +11,8 @@ unsigned int la_version(unsigned int version);
 char *la_objsearch(const char *name, uintptr_t *cookie, unsigned int flag);
 
 bool is_preload(const char *object);
-bool ld_preload_contains_object (const char *object);
-bool ld_so_preload_contains_object (const char *object);
+bool allowed_preload(const char *object);
+bool env_variable_contains_object (const char *object, const char *env_variable);
+bool file_contains_object(const char *object, const char *specified_file);
 
 #endif
