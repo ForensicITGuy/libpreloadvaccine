@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
@@ -73,45 +72,54 @@ unsigned int la_version(unsigned int version)
 */
 char *la_objsearch(const char *name, uintptr_t *cookie, unsigned int flag)
 {
+    // Don't really need these, discarding.
     UNUSED(cookie);
     UNUSED(flag);
-    printf("%s\n",name);
 
-    if(is_preload(name) && !allowed_preload(name))
+    // Determine if the object searched for is a preload and if it's whitelisted.
+    // If the preload is whitelisted (or if it isn't a preload), allow the load to proceed.
+    // If preload isn't whitelisted, return NULL to ignore the library search.
+    // Currently causes a ld.so error on the console when a preload is ignored.
+    if(is_preload(name) && (allowed_preload(name) == false))
     {
-        printf("Found preload not allowed");
         return NULL;
     }
     else
     {
-        printf("Found object allowed");
         return (char *)name;
     }
 }
 
+// Determine if the passed object is a preload.
+// Checks LD_PRELOAD environment variable and /etc/ld.so.preload
+// TODO: possibly check --preloads argument from the linker if possible
 bool is_preload(const char *object)
 {
-    printf("Testing preloads");
     bool in_ld_preload = env_variable_contains_object(object, "LD_PRELOAD");
     bool in_ld_so_preload = file_contains_object(object, "/etc/ld.so.preload");
 
+    // Return boolean
     return (in_ld_preload || in_ld_so_preload);
 }
 
+// Determine if the passed object is whitelisted.
 bool allowed_preload(const char *object)
 {
-    printf("Testing allow file");
     return file_contains_object(object, "/etc/libpreloadvaccine.allow");
 }
 
+// Determine if the passed object is within a specified environment variable.
 bool env_variable_contains_object (const char *object, const char *env_variable)
 {
-    printf("Testing env var");
     bool contains_object;
+
+    // Get the environment variable
     const char *ld_preload = getenv(env_variable);
 
+    // If the variable doesn't exist, this NULL check will fail, continuing on.
     if (ld_preload != NULL)
     {
+        // Check if the returned environment variable string contains the object.
         if (strstr(ld_preload,object) != NULL)
         {
             contains_object = true;
@@ -122,27 +130,33 @@ bool env_variable_contains_object (const char *object, const char *env_variable)
         }
     }
 
+    // Return boolean
     return contains_object;
 }
 
+// Determine if the specified file contains the passed object.
 bool file_contains_object(const char *object, const char *specified_file)
 {
-    printf("Testing file");
     bool contains_object = false;
 
     int fd;
     struct stat file_info;
-    size_t size;
+    size_t size;;
 
-    char *mapped_file;
-
+    // Open the specified file into a file descriptor, read only.
+    // If the file doesn't open, return false.
     if ((fd = open(specified_file, O_RDONLY)) >= 0)
     {    
+        // Get the size of the specified file and dimension the mapped file buffer with it.
         fstat(fd, &file_info);
         size = file_info.st_size;
+        char mapped_file[size];
 
-        mapped_file = mmap(NULL, size, PROT_READ, MAP_PRIVATE, fd, 0);
+        // Read the specified file into a buffer.
+        // Probably needs error handling.
+        read(fd,mapped_file,size);
 
+        // Check if mapped file contains the object.
         if (strstr(mapped_file,object) != NULL)
         {
             contains_object = true;
@@ -152,8 +166,7 @@ bool file_contains_object(const char *object, const char *specified_file)
             contains_object = false;
         }
         
-        munmap(mapped_file, size);
-
+        // If the file descriptor is still open, close it.
         if(fd)
         {
             close(fd);
@@ -164,7 +177,6 @@ bool file_contains_object(const char *object, const char *specified_file)
         contains_object = false;
     }
     
-
     // Return boolean
     return contains_object;
 }
