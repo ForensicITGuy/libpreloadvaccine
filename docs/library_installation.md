@@ -24,4 +24,4 @@ If you want to whitelist any preloads, add them to this configuration file: `/et
 
 This list should be space delimited.
 
-If you don't wish to whitelist preloads, you can simpy chose not to create this file or leave it blank.
+If you don't wish to whitelist preloads, you can simpy choose not to create this file or leave it blank.
