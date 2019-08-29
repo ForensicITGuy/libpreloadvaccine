@@ -15,3 +15,6 @@ To whitelist preloads, add them to `/etc/libpreloadvaccine.allow`.
 
 ## Disclaimer
 Like a real vaccine, this is not 100% effective against all types of preloads attacks. You may still define preloads via command line arguments to the dymanic linker for effect. And just like a vaccine, this is better than running around without protection!
+
+## In Action
+![libpreloadvaccine in action](docs/screenshot.png)
