@@ -18,3 +18,6 @@ Like a real vaccine, this is not 100% effective against all types of preloads at
 
 ## In Action
 ![libpreloadvaccine in action](docs/screenshot.png)
+
+## Credits (Hall of Fame)
+[@zacbrown](https://github.com/zacbrown)
