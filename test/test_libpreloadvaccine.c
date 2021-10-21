@@ -33,7 +33,7 @@ static void test_file_contains_object(void)
 static void test_file_contains_object_bad_file(void)
 {
     char *working_dir = getenv("PWD");
-    char *test_path = strcat(working_dir,"/test/test_data/ld.so.prload");
+    char *test_path = strcat(working_dir,"/test/test_data/ld.so.preload");
     TEST_ASSERT_FALSE(file_contains_object("/tmp/libpreload.so", test_path));
 }
 
